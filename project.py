@@ -231,7 +231,7 @@ def showCategories():
 
 @app.route('/catalog/JSON')
 def categoriesJSON():
-    categories = session.query(Category).order_by(asc(Category.name))all()
+    categories = session.query(Category).order_by(asc(Category.name)).all()
     return jsonify(Category = [category.serialize for category in categories])
 
 #Create a new Category
@@ -415,5 +415,5 @@ def disconnect():
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
-    app.debug = True
+    app.debug = False
     app.run(host='0.0.0.0', port=8000)

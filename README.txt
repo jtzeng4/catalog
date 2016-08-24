@@ -1,12 +1,28 @@
 To use the program, there are two different files: database_setup.py and project.py. You must first initialize database_setup.py to create the database file. project.py has the functions to create and edit the website application.
 
-After tournament.sql is initialized, tournament.py must be initialized to be able to use all the functions. Tournament.py has different functions: connect, deleteMatches, deletePlayers, countPlayers, registerPlayer, playerStandings, reportMatch, swissPairings.
+After initializing the database with database_setup.py, run project.py to start the website.
 
-*connect: connects to the tournament database.
-*deleteMatches: removes all match records from database
-*deletePlayers: removes all player records from database
-*countPlayers: returns the number of players registered
-*registerPlayer: adds a player to tournament database, needs a name input and the database will give it a id number.
-*playerStandings: returns a list of the players and their win records sorted by number of wins.
-*reportMatch: records a match between two players, needs two name inputs.
-*swissPairings: returns a list of pairs of players that will play in the next round.
+The templates folder contains all of the html templates for each function.
+
+*showLogin: shows the login state.
+*fbconnect: connect through Facebook.
+*gconnect: connect through Google+.
+*createUser: creates a new user once connected through Facebook or Google+.
+*getUserInfo: obtains the new user's information.
+*getUserID: assigns an ID to the new user.
+
+*showCategories: lists the categories in the database.
+*categoriesJSON: lists the categories in the database in JSON format.
+*newCategory: creates a new category to the database.
+*editCategory: edits an existing category in the database.
+*deleteCategory: deletes an existing category in the database.
+
+*showItems: lists the items in a specific category
+*itemsJSON: lists the items in a specific category in JSON format.
+*newCategoryItem: creates a new item in a specific category.
+*editCategoryItem: edits an existing item in a specific category.
+*deleteCategoryItem: deletes an existing item in a specific category.
+
+*fbdisconnect: disconnects from Facebook.
+*gdisconnect: disconnects from Google+
+*disconnect: disconnects from every connection.
