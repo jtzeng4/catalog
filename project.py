@@ -11,11 +11,13 @@ import httplib2
 import json
 from flask import make_response
 import requests
+from functools import wraps
+
 
 app = Flask(__name__)
 
 CLIENT_ID = json.loads(
-    open('client_secrets.json', 'r').read())['web']['client_id']
+    open( 'google_client_secrets.json', 'r' ).read())['web'][ ' client_id' ]
 APPLICATION_NAME = "Catalog Application"
 
 # Connect to Database and create database session
@@ -25,6 +27,14 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+#reduce usage of login code
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in login_session:
+          return redirect(url_for( '/login' ) )
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Create anti-forgery state token
 @app.route('/login')
@@ -114,7 +124,7 @@ def gconnect():
 
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('google_client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -225,9 +235,9 @@ def getUserID(email):
 def showCategories():
 	categories = session.query(Category).order_by(asc(Category.name)).all()
 	if 'username' not in login_session:
-            return render_template('publiccategories.html', categories = categories)
-        else:
-            return render_template('categories.html', categories = categories)
+        return render_template('publiccategories.html', categories = categories)
+    else:
+        return render_template('categories.html', categories = categories)
 
 @app.route('/catalog/JSON')
 def categoriesJSON():
@@ -236,9 +246,8 @@ def categoriesJSON():
 
 #Create a new Category
 @app.route('/catalog/new/', methods = ['GET', 'POST'])
+@login_required
 def newCategory():
-    if 'username' not in login_session:
-        return redirect('login')
     if request.method == 'POST':
         newCategory = Category(
             name = request.form['name'], user_id = login_session['user_id'])
@@ -251,13 +260,12 @@ def newCategory():
 
 #Edit a Category
 @app.route('/catalog/<int:category_id>/edit/', methods=['GET', 'POST'])
+@login_required
 def editCategory(category_id):
     editedCategory = session.query(
         Category).filter_by(id=category_id).one()
-    if 'username' not in login_session:
-        return redirect('/login')
     if editedCategory.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this Category. Please log in.');}</script><body onload='myFunction()''>"
+        flash('You are not authorized to edit this Category. Please log in.')
     if request.method == 'POST':
         if request.form['name']:
             editedCategory.name = request.form['name']
@@ -268,13 +276,12 @@ def editCategory(category_id):
 
 #Delete a Category
 @app.route('/catalog/<int:category_id>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteCategory(category_id):
     categoryToDelete = session.query(
         Category).filter_by(id=category_id).one()
-    if 'username' not in login_session:
-        return redirect('/login')
     if categoryToDelete.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete this category. Please log in.');}</script><body onload='myFunction()''>"
+        flash('You are not authorized to delete this category. Please log in.')
     if request.method == 'POST':
         session.delete(categoryToDelete)
         flash('%s Successfully Deleted' % categoryToDelete.name)
@@ -302,12 +309,11 @@ def itemsJSON(category_id):
     
 #Create a new category Item
 @app.route('/catalog/<int:category_id>/items/new', methods=['GET', 'POST'])
+@login_required
 def newCategoryItem(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     category = session.query(Category).filter_by(id = category_id).one()
     if login_session['user_id'] != category.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to add items to this category. Please log in.');}</script><body onload='myFunction()''>"
+        flash('You are not authorized to add items to this category. Please log in.')
     if request.method == 'POST':
         newItem = Items(name = request.form['name'], description = request.form['description'], 
             category_id = category_id, user_id = category.user_id)
@@ -320,13 +326,12 @@ def newCategoryItem(category_id):
 
 # Edit a category Item
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/edit', methods=['GET', 'POST'])
+@login_required
 def editCategoryItem(category_id, item_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     editedItem = session.query(Items).filter_by(id = item_id).one()
     category = session.query(Category).filter_by(id=category_id).one()
     if login_session['user_id'] != category.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to edit items in this category. Please log in.');}</script><body onload='myFunction()''>"
+        flash('You are not authorized to edit items in this category. Please log in.')
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
@@ -342,13 +347,12 @@ def editCategoryItem(category_id, item_id):
 
 # Delete a category Item
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/delete', methods=['GET', 'POST'])
+@login_required
 def deleteCategoryItem(category_id, item_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     category = session.query(Category).filter_by(id = category_id).one()
     itemToDelete = session.query(Items).filter_by(id = item_id).one()
     if login_session['user_id'] != category.user_id:
-        return "<script>function myFunction() {alert('You are not authorized to delete items in this category. Please log in.');}</script><body onload='myFunction()''>"
+        flash('You are not authorized to delete items in this category. Please log in.')
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
